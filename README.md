@@ -10,13 +10,27 @@ solver finds *how* to get it.
 
 ## Install and run
 
+Get the code:
+
+    git clone https://github.com/LGlielmo/piura-optimization-mpc
+    cd piura-optimization-mpc
+
+**With Anaconda or Miniconda (recommended):** create a separate environment
+with everything the demos need, so nothing else on your computer is changed:
+
+    conda env create -f environment.yml
+    conda activate piura
+
+**With plain Python:** preferably inside a virtual environment,
+
     pip install cvxpy matplotlib numpy
-    git clone <this repository>
-    cd <this repository>
+
+Then run, from inside the repository folder (the scripts import `data.py`):
+
     python 1_battery_day.py
 
-Run the scripts from inside the repository folder (they import `data.py`).
-Each one opens a figure and saves it as a PNG.
+Each script opens a figure and saves it as a PNG. The first run in a new
+environment can take a minute while matplotlib builds its font cache.
 
 ## The demos
 
