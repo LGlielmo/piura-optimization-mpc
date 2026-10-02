@@ -1,0 +1,54 @@
+# Optimization and Model Predictive Control — three small demos
+
+Companion code for the seminar *Cyber-Physical Systems: optimization and model
+predictive control*, given by Luigi Glielmo (Università di Napoli Federico II)
+at the opening of the Master in Automation Engineering, Piura, Perú, October 2026.
+
+Each demo is a short Python script built on [CVXPY](https://www.cvxpy.org):
+you write down *what you want* (an objective and some constraints) and a
+solver finds *how* to get it.
+
+## Install and run
+
+    pip install cvxpy matplotlib numpy
+    git clone <this repository>
+    cd <this repository>
+    python 1_battery_day.py
+
+Run the scripts from inside the repository folder (they import `data.py`).
+Each one opens a figure and saves it as a PNG.
+
+## The demos
+
+**1. `1_battery_day.py` — optimization.**
+A house with rooftop solar and a battery, under a time-of-use tariff. One
+linear program decides, hour by hour, when to buy, sell, charge and discharge
+so that the daily bill is as small as possible.
+Try different battery sizes: `python 1_battery_day.py 5`, `... 10`, `... 20`.
+Why does doubling the battery from 10 to 20 kWh barely help?
+
+**2. `2_battery_mpc.py` — from optimization to MPC.**
+The same house over three days, but the forecasts are wrong: day 2 is cloudy
+instead of sunny, and on day 3 guests arrive in the evening. Compare:
+- *perfect foresight*: knows the future (impossible; a benchmark),
+- *open loop*: makes one plan at midnight and follows it,
+- *MPC*: every hour measures the battery, re-plans the next 24 hours, applies
+  only the first hour, and repeats.
+
+**3. `3_cart_mpc.py` — MPC on a mechanical system.**
+Stop a cart at a wall with limited braking. With a short look-ahead the
+controller goes too fast and runs out of room to stop; a rule "be able to stop
+at the end of the plan" makes it safe but slow; a longer look-ahead does both.
+
+## Things to try
+
+- In `data.py`, change the tariff, the solar size or the battery efficiency.
+- In demo 2, make the forecast errors larger, or shorten the MPC look-ahead `H`.
+- In demo 3, try `N = 10, 20, 30`: what is the shortest look-ahead that still
+  stops safely?
+
+## Credits
+
+The residential-energy example follows the spirit of the one in S. Boyd and
+B. Meyers, *Convex Optimization with Smart Grid Examples* (IEEE SmartGridComm
+2025). All data here are synthetic and illustrative.
