@@ -15,14 +15,14 @@ import cvxpy as cp
 from data import HOURS, LOAD, PV_CLEAR, BUY, SELL, BATT
 
 
-def plan_battery(load, pv, buy, sell, Q, B, eta, wear, q0=None, q_end=None):
+def plan_battery(load, pv, buy, sell, Q, B, eta, wear, hold, q0=None, q_end=None):
     """Minimum-cost battery schedule. Returns a dict of hourly arrays."""
     T = len(load)
     imp, exp = cp.Variable(T, nonneg=True), cp.Variable(T, nonneg=True)  # grid in / out
     ch, dis = cp.Variable(T, nonneg=True), cp.Variable(T, nonneg=True)   # battery in / out
     q = cp.Variable(T + 1)                                               # stored energy
 
-    cost = buy @ imp - sell @ exp + wear * cp.sum(ch + dis)
+    cost = buy @ imp - sell @ exp + wear * cp.sum(ch + dis) + hold * cp.sum(q[1:])
     rules = [pv + imp + dis == load + ch + exp,          # power balance, every hour
              q[1:] == q[:-1] + eta * ch - dis / eta,     # battery dynamics
              0 <= q, q <= Q, ch <= B, dis <= B]          # limits

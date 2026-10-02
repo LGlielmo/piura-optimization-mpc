@@ -28,6 +28,8 @@ BATT = dict(
     B=3.0,       # max charge / discharge power [kW]
     eta=0.95,    # one-way efficiency
     wear=0.01,   # small cost per kWh moved, discourages useless cycling [$/kWh]
+    hold=0.001,  # tiny cost per kWh kept stored for an hour (self-discharge);
+                 # it also breaks ties, so every solver finds the same schedule
 )
 
 
