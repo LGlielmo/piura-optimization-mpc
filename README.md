@@ -52,3 +52,7 @@ at the end of the plan" makes it safe but slow; a longer look-ahead does both.
 The residential-energy example follows the spirit of the one in S. Boyd and
 B. Meyers, *Convex Optimization with Smart Grid Examples* (IEEE SmartGridComm
 2025). All data here are synthetic and illustrative.
+
+## License
+
+MIT — see [LICENSE](LICENSE). You are free to use and adapt this code, with attribution.
