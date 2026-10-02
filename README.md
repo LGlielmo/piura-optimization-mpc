@@ -36,9 +36,10 @@ instead of sunny, and on day 3 guests arrive in the evening. Compare:
   only the first hour, and repeats.
 
 **3. `3_cart_mpc.py` — MPC on a mechanical system.**
-Stop a cart at a wall with limited braking. With a short look-ahead the
-controller goes too fast and runs out of room to stop; a rule "be able to stop
-at the end of the plan" makes it safe but slow; a longer look-ahead does both.
+Bring a cart to a wall and stop, with limited braking. With a short
+look-ahead the controller goes too fast, sees the wall too late, and crashes;
+a rule "be able to stop at the end of the plan" makes it safe but slow; a
+longer look-ahead is both safe and fast.
 
 ## Things to try
 
