@@ -1,12 +1,13 @@
-# Optimization and Model Predictive Control — three small demos
+# Optimization and Model Predictive Control — four small demos
 
 Companion code for the seminar *Cyber-Physical Systems: optimization and model
 predictive control*, given by Luigi Glielmo (Università di Napoli Federico II)
 at the opening of the Master in Automation Engineering, Piura, Perú, October 2026.
 
-Each demo is a short Python script built on [CVXPY](https://www.cvxpy.org):
+Demos 1–3 are short Python scripts built on [CVXPY](https://www.cvxpy.org):
 you write down *what you want* (an objective and some constraints) and a
-solver finds *how* to get it.
+solver finds *how* to get it. Demo 4 (flight planning for a drone) is a
+plain-Python shortest-path search.
 
 ## Install and run
 
@@ -55,12 +56,21 @@ look-ahead the controller goes too fast, sees the wall too late, and crashes;
 a rule "be able to stop at the end of the plan" makes it safe but slow; a
 longer look-ahead is both safe and fast.
 
+**4. `4_field_path.py` — planning a drone flight** (seminar *Drones for
+precision agriculture*). A field with trees, a barn and a water tank, as a grid
+of 10 m cells. First the shortest flight from the base to a sick plant (A*
+search); then a lawn-mower path that photographs the whole field, going around
+the obstacles. Is one battery enough? Only numpy and matplotlib are needed.
+Try a bigger field: `python 4_field_path.py 40 25`.
+
 ## Things to try
 
 - In `data.py`, change the tariff, the solar size or the battery efficiency.
 - In demo 2, make the forecast errors larger, or shorten the MPC look-ahead `H`.
 - In demo 3, try `N = 10, 20, 30`: what is the shortest look-ahead that still
   stops safely?
+- In demo 4, change `SPEED` or `BATTERY_MIN`: how fast must the drone fly to
+  cover the field on one battery? (Faster also means blurrier pictures.)
 
 ## Credits
 
