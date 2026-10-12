@@ -4,8 +4,9 @@ The field is a grid of 10 m x 10 m cells.  Some cells are blocked: a row of
 tall trees, a barn, a water tank.  The drone starts from its base (bottom left).
 
 Two questions, both optimization problems:
-  1. A farmer spots a sick plant.  What is the SHORTEST flight from the base to
-     that plant, going around the obstacles?  -> A* search on the grid.
+  1. A farmer spots a sick plant, just behind the water tank.  What is the
+     SHORTEST flight from the base to that plant, going around the obstacles?
+     -> A* search on the grid.
   2. We want a picture of the WHOLE field.  The drone flies back and forth like
      a lawn mower; when an obstacle is in the way, it uses A* to get around it.
      Is the battery enough?
@@ -25,9 +26,14 @@ import matplotlib.pyplot as plt
 CELL = 10.0            # m, side of one cell
 SPEED = 5.0            # m/s, cruise speed while taking pictures
 BATTERY_MIN = 20.0     # minutes of flight on one battery
-ANIM_MS = 150          # --explore: milliseconds per frame (bigger = slower animation)
+ANIM_MS = 250          # --explore: milliseconds per frame (bigger = slower animation)
 
 MOVES = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+
+
+def tank(nx, ny):
+    """Centre and radius of the round water tank, in cells."""
+    return int(0.75 * nx), int(0.25 * ny), max(2, nx // 12)
 
 
 def make_field(nx, ny):
@@ -35,7 +41,7 @@ def make_field(nx, ny):
     free = np.ones((nx, ny), dtype=bool)
     free[int(0.35 * nx), int(0.15 * ny):int(0.80 * ny)] = False          # row of trees
     free[int(0.60 * nx):int(0.75 * nx), int(0.55 * ny):int(0.80 * ny)] = False  # barn
-    cx, cy, r = int(0.75 * nx), int(0.25 * ny), max(2, nx // 12)      # water tank
+    cx, cy, r = tank(nx, ny)                                          # water tank
     for i in range(nx):
         for j in range(ny):
             if (i - cx) ** 2 + (j - cy) ** 2 <= r ** 2:
@@ -125,7 +131,7 @@ def draw_field(ax, free, base, goal=None):
                 bbox=box, zorder=6)
     if goal is not None:
         ax.plot(*goal, "*", color="#c0392b", ms=20, zorder=5)
-        ax.annotate("sick plant", goal, xytext=(-95, -6), textcoords="offset points",
+        ax.annotate("sick plant", goal, xytext=(-40, 16), textcoords="offset points",
                     fontsize=11, color="#c0392b", bbox=box, zorder=6)
     ax.set_xticks([]); ax.set_yticks([]); ax.set_aspect("equal")
 
@@ -187,7 +193,8 @@ def main():
     ny = nums[1] if len(nums) > 1 else 20
     free = make_field(nx, ny)
     base = (0, 0)
-    sick = (nx - 2, ny - 2)
+    cx, cy, r = tank(nx, ny)
+    sick = (cx + r + 3, cy + 1)     # the sick plant, just behind the water tank
     if "--explore" in flags:
         explore(free, base, sick, gif="--gif" in flags)
         return
