@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 CELL = 10.0            # m, side of one cell
 SPEED = 5.0            # m/s, cruise speed while taking pictures
 BATTERY_MIN = 20.0     # minutes of flight on one battery
+ANIM_MS = 150          # --explore: milliseconds per frame (bigger = slower animation)
 
 MOVES = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
 
@@ -153,7 +154,7 @@ def explore(free, base, goal, gif=False):
         grids.append((g, im)); lines.append(line)
         titles.append(ax.set_title(name, fontsize=13))
 
-    step = max(1, len(runs[0][1]) // 120)          # about 120 frames, ~11 s on screen
+    step = max(1, len(runs[0][1]) // 120)          # about 120 frames
     nframes = len(runs[0][1]) // step + 25         # + a pause at the end
 
     def update(k):
@@ -170,7 +171,7 @@ def explore(free, base, goal, gif=False):
             t.set_text(f"{name}: {m} squares explored")
         return []
 
-    anim = FuncAnimation(fig, update, frames=nframes, interval=90, repeat=False)
+    anim = FuncAnimation(fig, update, frames=nframes, interval=ANIM_MS, repeat=False)
     fig.tight_layout()
     if gif:
         anim.save("fig_explore.gif", writer="pillow", fps=25)
