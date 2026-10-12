@@ -159,11 +159,14 @@ def explore(free, base, goal, gif=False):
     def update(k):
         for (name, order, path), (g, im), line, t in zip(runs, grids, lines, titles):
             m = min(len(order), (k + 1) * step)
+            g[:] = np.nan                                  # start from an empty field
             for c, d in order[:m]:
                 g[c[1], c[0]] = d
             im.set_data(g)
             if m == len(order):
                 line.set_data(path[:, 0], path[:, 1])
+            else:
+                line.set_data([], [])
             t.set_text(f"{name}: {m} squares explored")
         return []
 
@@ -171,9 +174,9 @@ def explore(free, base, goal, gif=False):
     fig.tight_layout()
     if gif:
         anim.save("fig_explore.gif", writer="pillow", fps=25)
-    update(nframes - 1)
+    plt.show()                                     # the animation runs here
+    update(nframes - 1)                            # final picture, saved as PNG
     fig.savefig("fig_explore.png", dpi=160)
-    plt.show()
 
 
 def main():
