@@ -62,6 +62,10 @@ of 10 m cells. First the shortest flight from the base to a sick plant (A*
 search); then a lawn-mower path that photographs the whole field, going around
 the obstacles. Is one battery enough? Only numpy and matplotlib are needed.
 Try a bigger field: `python 4_field_path.py 40 25`.
+To *watch* how the shortest path is found, run `python 4_field_path.py --explore`:
+Dijkstra (left) spreads from the base like a ripple; A* (right) adds to each
+square the straight-line distance still to go, and leans towards the target.
+Same path length, far fewer squares explored.
 
 ## Things to try
 

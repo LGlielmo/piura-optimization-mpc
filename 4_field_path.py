@@ -14,6 +14,8 @@ Moves: to the 8 neighbouring cells (straight = 10 m, diagonal = 14.1 m).
 
 Run:  python 4_field_path.py            (default field, 30 x 20 cells)
       python 4_field_path.py 40 25      (a bigger field)
+      python 4_field_path.py --explore  (watch how the shortest path is found:
+                                         Dijkstra vs A*, side by side)
 """
 import sys
 import heapq
@@ -40,18 +42,32 @@ def make_field(nx, ny):
     return free
 
 
-def astar(free, start, goal):
-    """Shortest path on the grid (A*).  Returns the list of cells, start to goal."""
+def astar(free, start, goal, guess=True, explored=None):
+    """Shortest path on the grid.  Returns the list of cells, start to goal.
+
+    Every square gets a score = metres already flown + (with guess=True) metres
+    still to go in a straight line.  Always continue from the lowest score.
+      guess=True  -> A*:       the search leans towards the goal
+      guess=False -> Dijkstra: the search spreads like a ripple from the start
+    If a list is passed as `explored`, the squares are appended to it in the
+    order they are explored, with their distance from the start.
+    """
     nx, ny = free.shape
 
     def h(c):                       # straight-line distance: never overestimates
-        return np.hypot(c[0] - goal[0], c[1] - goal[1])
+        return np.hypot(c[0] - goal[0], c[1] - goal[1]) if guess else 0.0
 
     best = {start: 0.0}
     came = {}
+    done = set()
     queue = [(h(start), start)]
     while queue:
         _, c = heapq.heappop(queue)
+        if c in done:
+            continue                # already explored by a shorter way
+        done.add(c)
+        if explored is not None:
+            explored.append((c, best[c]))
         if c == goal:
             path = [c]
             while c in came:
@@ -96,12 +112,81 @@ def coverage(free, start):
     return path
 
 
+def draw_field(ax, free, base, goal=None):
+    nx, ny = free.shape
+    ext = (-0.5, nx - 0.5, -0.5, ny - 0.5)
+    ax.imshow(~free.T, origin="lower", cmap="Greens_r", alpha=0.35, extent=ext)
+    ax.imshow(np.ma.masked_where(free.T, free.T), origin="lower", cmap="Greys",
+              vmin=-1, vmax=0, extent=ext)
+    ax.plot(*base, "s", color="#0d1b2a", ms=11)
+    box = dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.85)
+    ax.annotate("base", base, xytext=(8, 8), textcoords="offset points", fontsize=11,
+                bbox=box, zorder=6)
+    if goal is not None:
+        ax.plot(*goal, "*", color="#c0392b", ms=20, zorder=5)
+        ax.annotate("sick plant", goal, xytext=(-95, -6), textcoords="offset points",
+                    fontsize=11, color="#c0392b", bbox=box, zorder=6)
+    ax.set_xticks([]); ax.set_yticks([]); ax.set_aspect("equal")
+
+
+def explore(free, base, goal, gif=False):
+    """Dijkstra and A* side by side: the explored squares appear one by one,
+    coloured by their distance from the base; then the path is drawn."""
+    from matplotlib.animation import FuncAnimation
+    nx, ny = free.shape
+    runs = []
+    for guess, name in [(False, "Dijkstra"), (True, "A*")]:
+        order = []
+        path = astar(free, base, goal, guess=guess, explored=order)
+        runs.append((name, order, np.array(path)))
+        print(f"{name:8s}: explored {len(order):4d} squares, path {length_m(path):.0f} m")
+
+    dmax = max(d for _, order, _ in runs for _, d in order)
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4.6))
+    grids, lines, titles = [], [], []
+    for ax, (name, order, path) in zip(axs, runs):
+        draw_field(ax, free, base, goal)
+        g = np.full((ny, nx), np.nan)
+        im = ax.imshow(g, origin="lower", cmap="YlOrBr", vmin=0, vmax=dmax, alpha=0.85,
+                       extent=(-0.5, nx - 0.5, -0.5, ny - 0.5))
+        line, = ax.plot([], [], color="#0d1b2a", lw=2.6)
+        grids.append((g, im)); lines.append(line)
+        titles.append(ax.set_title(name, fontsize=13))
+
+    step = max(1, len(runs[0][1]) // 120)          # about 120 frames
+    nframes = len(runs[0][1]) // step + 25         # + a pause at the end
+
+    def update(k):
+        for (name, order, path), (g, im), line, t in zip(runs, grids, lines, titles):
+            m = min(len(order), (k + 1) * step)
+            for c, d in order[:m]:
+                g[c[1], c[0]] = d
+            im.set_data(g)
+            if m == len(order):
+                line.set_data(path[:, 0], path[:, 1])
+            t.set_text(f"{name}: {m} squares explored")
+        return []
+
+    anim = FuncAnimation(fig, update, frames=nframes, interval=40, repeat=False)
+    fig.tight_layout()
+    if gif:
+        anim.save("fig_explore.gif", writer="pillow", fps=25)
+    update(nframes - 1)
+    fig.savefig("fig_explore.png", dpi=160)
+    plt.show()
+
+
 def main():
-    nx = int(sys.argv[1]) if len(sys.argv) > 1 else 30
-    ny = int(sys.argv[2]) if len(sys.argv) > 2 else 20
+    flags = [a for a in sys.argv[1:] if a.startswith("--")]
+    nums = [int(a) for a in sys.argv[1:] if not a.startswith("--")]
+    nx = nums[0] if len(nums) > 0 else 30
+    ny = nums[1] if len(nums) > 1 else 20
     free = make_field(nx, ny)
     base = (0, 0)
     sick = (nx - 2, ny - 2)
+    if "--explore" in flags:
+        explore(free, base, sick, gif="--gif" in flags)
+        return
 
     short = astar(free, base, sick)
     cover = coverage(free, base)
@@ -123,21 +208,10 @@ def main():
               f"Whole field: {L2/1000:.1f} km, {t2:.0f} min "
               f"(battery {BATTERY_MIN:.0f} min)"]
     for ax, path, title, col in zip(axs, [short, cover], titles, ["#b45a0a", "#1a7a8a"]):
-        ax.imshow(~free.T, origin="lower", cmap="Greens_r", alpha=0.35,
-                  extent=(-0.5, nx - 0.5, -0.5, ny - 0.5))
-        ax.imshow(np.ma.masked_where(free.T, free.T), origin="lower", cmap="Greys",
-                  vmin=-1, vmax=0, extent=(-0.5, nx - 0.5, -0.5, ny - 0.5))
+        draw_field(ax, free, base, sick if path is short else None)
         p = np.array(path)
         ax.plot(p[:, 0], p[:, 1], color=col, lw=2.2 if path is short else 1.4)
-        ax.plot(*base, "s", color="#0d1b2a", ms=11)
-        ax.annotate("base", base, xytext=(6, 6), textcoords="offset points", fontsize=11)
-        if path is short:
-            ax.plot(*sick, "*", color="#c0392b", ms=20)
-            ax.annotate("sick plant", sick, xytext=(-95, -6), textcoords="offset points",
-                        fontsize=11, color="#c0392b")
         ax.set_title(title, fontsize=13)
-        ax.set_xticks([]); ax.set_yticks([])
-        ax.set_aspect("equal")
     fig.tight_layout()
     fig.savefig("fig_field_path.png", dpi=160)
     plt.show()
