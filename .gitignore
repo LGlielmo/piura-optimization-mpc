@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *.png
+*.gif
 .DS_Store
 .ipynb_checkpoints/
 .vscode/
