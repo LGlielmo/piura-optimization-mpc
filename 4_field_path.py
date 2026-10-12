@@ -153,7 +153,7 @@ def explore(free, base, goal, gif=False):
         grids.append((g, im)); lines.append(line)
         titles.append(ax.set_title(name, fontsize=13))
 
-    step = max(1, len(runs[0][1]) // 120)          # about 120 frames
+    step = max(1, len(runs[0][1]) // 120)          # about 120 frames, ~11 s on screen
     nframes = len(runs[0][1]) // step + 25         # + a pause at the end
 
     def update(k):
@@ -170,7 +170,7 @@ def explore(free, base, goal, gif=False):
             t.set_text(f"{name}: {m} squares explored")
         return []
 
-    anim = FuncAnimation(fig, update, frames=nframes, interval=40, repeat=False)
+    anim = FuncAnimation(fig, update, frames=nframes, interval=90, repeat=False)
     fig.tight_layout()
     if gif:
         anim.save("fig_explore.gif", writer="pillow", fps=25)
