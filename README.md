@@ -1,10 +1,10 @@
-# Optimization and Model Predictive Control — four small demos
+# Optimization and Model Predictive Control — five small demos
 
 Companion code for the seminar *Cyber-Physical Systems: optimization and model
 predictive control*, given by Luigi Glielmo (Università di Napoli Federico II)
 at the opening of the Master in Automation Engineering, Piura, Perú, October 2026.
 
-Demos 1–3 are short Python scripts built on [CVXPY](https://www.cvxpy.org):
+Demos 1–3 and 5 are short Python scripts built on [CVXPY](https://www.cvxpy.org):
 you write down *what you want* (an objective and some constraints) and a
 solver finds *how* to get it. Demo 4 (flight planning for a drone) is a
 plain-Python shortest-path search.
@@ -67,12 +67,22 @@ Dijkstra (left) spreads from the base like a ripple; A* (right) adds to each
 square the straight-line distance still to go, and leans towards the target.
 Same path length, far fewer squares explored.
 
+**5. `5_cart_pid_vs_mpc.py` — PID or MPC?** (seminar *From PID to Model
+Predictive Control*). The cart of demo 3, now with a PD controller whose push the
+motor clips to ±1 m/s². A gentle tuning is safe but slow; a snappy one crashes.
+`python 5_cart_pid_vs_mpc.py tune` tries 10 000 pairs of gains and finds a PD as
+fast as MPC; `python 5_cart_pid_vs_mpc.py moving` starts the cart at 2 m/s
+towards the wall: the tuned PD crashes, the MPC (unchanged) does not.
+Needs `3_cart_mpc.py` in the same folder.
+
 ## Things to try
 
 - In `data.py`, change the tariff, the solar size or the battery efficiency.
 - In demo 2, make the forecast errors larger, or shorten the MPC look-ahead `H`.
 - In demo 3, try `N = 10, 20, 30`: what is the shortest look-ahead that still
   stops safely?
+- In demo 5, try other starting speeds or a wall at 5 m: which controllers
+  still arrive safely, and which need to be re-tuned?
 - In demo 4, change `SPEED` or `BATTERY_MIN`: how fast must the drone fly to
   cover the field on one battery? (Faster also means blurrier pictures.)
 
