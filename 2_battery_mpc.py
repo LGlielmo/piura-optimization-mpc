@@ -111,8 +111,9 @@ def main():
              "MPC": ("#2E8B57", "-")}
     for p, (qs, c) in res.items():
         col, ls = style[p]
+        top = p == "perfect foresight"               # dotted line on top, so it shows
         ax[1].plot(np.arange(T + 1) - .5, qs, color=col, ls=ls, lw=2.5,
-                   label=f"{p}  ({c:.2f} $)")
+                   label=f"{p}  ({c:.2f} $)", zorder=3 if top else 2)
     ax[1].set_ylabel("stored kWh"); ax[1].set_xlabel("hour")
     ax[1].set_ylim(-.3, BATT["Q"] * 1.1); ax[1].legend(loc="upper left", fontsize=9)
     ax[1].set_xticks(range(0, T + 1, 12))
