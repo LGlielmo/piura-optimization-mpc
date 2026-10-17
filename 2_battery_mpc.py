@@ -7,8 +7,16 @@ Day 3: normal forecast, but guests arrive in the evening (load +60%).
 Three ways to run the battery:
   * perfect foresight   - knows the future (impossible; the benchmark)
   * open loop           - plans once at midnight of day 1, then follows the plan
-  * MPC                 - every hour: measure the battery, re-plan the next 24 h,
+  * MPC                 - every hour: measure the battery, the sun and the load,
+                          correct the forecast, re-plan the next 24 h,
                           apply only the first hour, repeat
+
+Forecast correction (MPC only): if the sun now gives 35% of the clear-sky value,
+expect 35% for the rest of today; the same for the house load.  Tomorrow is
+forecast as a normal day.
+
+All three policies may end day 3 with any charge; the difference from the
+starting charge is then settled at the night price (same rule for all).
 
 Run:  python 2_battery_mpc.py
 """
@@ -47,18 +55,31 @@ def apply(t, q, ch, dis):
     return q + eta * ch - dis / eta, ch, dis
 
 
+LOAD_FC, PV_FC = repeat_days(LOAD, DAYS + 1), repeat_days(PV_CLEAR, DAYS + 1)
+
+
+def forecast(t):
+    """Next H hours as seen at hour t: the current hour is measured, and the rest
+    of today is the normal forecast scaled by what is measured now."""
+    ld, pv = LOAD_FC[t:t + H].copy(), PV_FC[t:t + H].copy()
+    today = min((t // 24 + 1) * 24, t + H) - t          # hours left today, this one included
+    ld[:today] *= load_true[t] / LOAD_FC[t]              # e.g. guests: +60% for the rest of today
+    if PV_FC[t] > 0.2:                                   # daylight: e.g. cloudy, 35% of clear sky
+        pv[:today] *= pv_true[t] / PV_FC[t]
+    ld[0], pv[0] = load_true[t], pv_true[t]              # the current hour is measured
+    return ld, pv
+
+
 def run(policy):
     q, qs, cost = Q0, [Q0], 0.0
     plan = None
     if policy == "open loop":                        # one plan, made at t = 0
-        plan = plan_battery(load_fc, pv_fc, buy[:T], sell[:T], **BATT, q0=Q0, q_end=Q0)
+        plan = plan_battery(load_fc, pv_fc, buy[:T], sell[:T], **BATT, q0=Q0)
     for t in range(T):
         if policy == "perfect foresight" and t == 0:
-            plan = plan_battery(load_true, pv_true, buy[:T], sell[:T], **BATT, q0=Q0, q_end=Q0)
+            plan = plan_battery(load_true, pv_true, buy[:T], sell[:T], **BATT, q0=Q0)
         if policy == "MPC":
-            # forecast for the next H hours, but the current hour is measured
-            ld = np.r_[load_true[t], repeat_days(LOAD, DAYS + 1)[t + 1:t + H]]
-            pv = np.r_[pv_true[t], repeat_days(PV_CLEAR, DAYS + 1)[t + 1:t + H]]
+            ld, pv = forecast(t)
             s = plan_battery(ld, pv, buy[t:t + H], sell[t:t + H], **BATT, q0=q)
             ch, dis = s["ch"][0], s["dis"][0]        # apply only the first move
         else:
@@ -66,8 +87,8 @@ def run(policy):
         q, ch, dis = apply(t, q, ch, dis)
         cost += hour_cost(t, load_true[t], pv_true[t], ch, dis)
         qs.append(q)
-    # end of day 3: energy taken from the battery is bought back at the night
-    # price, energy left over is credited at the same price (fair comparison)
+    # end of day 3, same rule for all: energy taken from the battery is bought back
+    # at the night price, energy left over is credited at the same price
     return np.array(qs), cost + buy[T] * (Q0 - q) / BATT["eta"]
 
 

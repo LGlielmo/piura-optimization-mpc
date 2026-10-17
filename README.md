@@ -47,8 +47,14 @@ The same house over three days, but the forecasts are wrong: day 2 is cloudy
 instead of sunny, and on day 3 guests arrive in the evening. Compare:
 - *perfect foresight*: knows the future (impossible; a benchmark),
 - *open loop*: makes one plan at midnight and follows it,
-- *MPC*: every hour measures the battery, re-plans the next 24 hours, applies
-  only the first hour, and repeats.
+- *MPC*: every hour measures the battery, the sun and the load, corrects the
+  forecast (if the sun now gives 35% of a clear day, expect 35% for the rest of
+  today; the same for the load), re-plans the next 24 hours, applies only the
+  first hour, and repeats.
+
+All three may end day 3 with any charge; the difference is settled at the night
+price, the same rule for all. Expected: 3.82 $ / 4.65 $ / 4.42 $. MPC recovers
+part of the gap; the rest needed knowing the clouds the night before.
 
 **3. `3_cart_mpc.py` — MPC on a mechanical system.**
 Bring a cart to a wall and stop, with limited braking. With a short
