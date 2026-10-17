@@ -2,6 +2,7 @@
 
 Cart (double integrator): position p, speed v, push u, |u| <= 1 m/s^2 (motor and brakes).
 Goal: reach the wall at p = 10 m as fast as possible, and stop there.
+"Stopped at the wall" here means: within 5 cm of it, and slower than 5 cm/s.
 
 A PD controller (a PID with Ki = 0: no friction, no constant force to cancel):
     u = Kp * (10 - p) - Kd * v,     then clipped to [-1, 1] by the motor.
@@ -28,7 +29,7 @@ DT, UMAX, WALL = 0.1, 1.0, 10.0
 Q_POS, R_U = 1.0, 0.1
 GENTLE = (0.5, 1.4)        # Kp, Kd: tuned by hand, cautious
 SNAPPY = (1.0, 1.0)        # tuned by hand, "a quick response"
-TUNED = (9.6, 16.0)        # what "python 5_cart_pid_vs_mpc.py tune" finds
+TUNED = (4.8, 8.0)         # what "python 5_cart_pid_vs_mpc.py tune" finds
 
 
 def pd(kp, kd):
@@ -56,7 +57,7 @@ def simulate(control, p0=0.0, v0=0.0, t_end=15.0):
             return np.array(out), ("crash", t_hit, v_hit)
         p, v = p_new, v_new
         out.append(((k + 1) * DT, p, v, u))
-        if arrived is None and abs(p - WALL) < 0.05:
+        if arrived is None and abs(p - WALL) < 0.05 and abs(v) < 0.05:
             arrived = (k + 1) * DT
     if arrived is not None:
         return np.array(out), ("arrived", arrived, None)
@@ -68,7 +69,7 @@ def describe(name, result):
     if what == "crash":
         return f"{name:28s}: CRASH at t = {t:4.1f} s, speed {x:.1f} m/s"
     if what == "arrived":
-        return f"{name:28s}: at the wall at t = {t:4.1f} s"
+        return f"{name:28s}: stopped at the wall at t = {t:4.1f} s"
     return f"{name:28s}: safe, but only at {x:.1f} m"
 
 
@@ -96,7 +97,8 @@ def plot(cases, p0, v0, title, fname):
 
 
 def tune():
-    """Try 100 x 100 pairs of gains; keep the fastest one that does not crash."""
+    """Try 100 x 100 pairs of gains; keep the fastest one that does not crash.
+    Many pairs tie at the fastest time: the first one found is kept."""
     kps = np.linspace(0.2, 20, 100)
     kds = np.linspace(0.2, 20, 100)
     T = np.full((len(kds), len(kps)), np.nan)          # arrival time
@@ -113,14 +115,14 @@ def tune():
                 slow[i, j] = 1
     t, kp, kd = best
     print(f"10 000 simulations. Fastest PD that does not crash: "
-          f"Kp = {kp:.1f}, Kd = {kd:.1f}, at the wall in {t:.1f} s")
+          f"Kp = {kp:.1f}, Kd = {kd:.1f}, stopped at the wall in {t:.1f} s")
     fig, ax = plt.subplots(figsize=(7, 5.5))
     ax.set_facecolor("#C0392B")                         # red background = crash
     ax.pcolormesh(kps, kds, np.where(slow == 1, 1.0, np.nan), cmap="Greys",
                   vmin=0, vmax=2, shading="auto")       # grey = too slow
     im = ax.pcolormesh(kps, kds, T, cmap="viridis_r", shading="auto")
     ax.plot(kp, kd, "*", color="w", ms=18, mec="k")
-    fig.colorbar(im, label="time to reach the wall [s]")
+    fig.colorbar(im, label="time to stop at the wall [s]")
     ax.set_xlabel("Kp"); ax.set_ylabel("Kd")
     ax.set_title("red: crash into the wall    grey: not there after 20 s")
     fig.tight_layout()
