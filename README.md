@@ -59,8 +59,12 @@ part of the gap; the rest needed knowing the clouds the night before.
 **3. `3_cart_mpc.py` — MPC on a mechanical system.**
 Bring a cart to a wall and stop, with limited braking. With a short
 look-ahead the controller goes too fast, sees the wall too late, and crashes;
-a rule "be able to stop at the end of the plan" makes it safe but slow; a
-longer look-ahead is both safe and fast.
+the rule "every plan ends stopped" (v_N = 0) makes it safe but slow; a
+longer look-ahead is both safe and fast. `python 3_cart_mpc.py knobs` shows the
+two knobs side by side, for N = 5, 10, 40: without the rule a longer horizon
+only softens the crash (3.6, then 2.7 m/s; safe only from about 3-4 s ahead),
+with it nothing crashes and the horizon sets the speed (5.9 m in 15 s, wall at
+12 s, wall at 6.1 s). Add `--es` for Spanish labels.
 
 **4. `4_field_path.py` — planning a drone flight** (seminar *Drones for
 precision agriculture*). A field with trees, a barn and a water tank, as a grid
