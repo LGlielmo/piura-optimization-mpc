@@ -9,7 +9,7 @@ that plan goes through the wall, the cart really crashes.
 
 Three controllers, all MPC, all solving a small QP every 0.1 s:
   * short look-ahead  (N = 5,  0.5 s): sees the wall too late to brake
-  * short look-ahead + "be able to stop at the end of the plan"  (v_N = 0)
+  * short look-ahead + "every plan ends stopped"  (v_N = 0)
   * long look-ahead   (N = 40, 4 s)
 
 Run:  python 3_cart_mpc.py
@@ -56,7 +56,7 @@ def simulate(N, stop_at_end, t_end=12.0):
 
 def main():
     cases = [("short look-ahead (N = 5)", 5, False, "#C0392B"),
-             ("N = 5 + must be able to stop", 5, True, "#E8A33D"),
+             ("N = 5 + stop at the end", 5, True, "#E8A33D"),
              ("long look-ahead (N = 40)", 40, False, "#2E8B57")]
     fig, ax = plt.subplots(3, 1, figsize=(9, 7.5), sharex=True)
     for name, N, stop, col in cases:
