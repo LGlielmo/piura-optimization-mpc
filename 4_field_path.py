@@ -17,6 +17,7 @@ Run:  python 4_field_path.py            (default field, 30 x 20 cells)
       python 4_field_path.py 40 25      (a bigger field)
       python 4_field_path.py --explore  (watch how the shortest path is found:
                                          Dijkstra vs A*, side by side)
+      add --es for Spanish labels, titles and messages (figures saved as *_es.png)
 """
 import sys
 import heapq
@@ -27,6 +28,14 @@ CELL = 10.0            # m, side of one cell
 SPEED = 5.0            # m/s, cruise speed while taking pictures
 BATTERY_MIN = 20.0     # minutes of flight on one battery
 ANIM_MS = 250          # --explore: milliseconds per frame (bigger = slower animation)
+
+ES = "--es" in sys.argv[1:]  # Spanish labels and messages (seminar in Piura)
+SUFFIX = "_es" if ES else ""
+
+
+def tr(en, es):
+    return es if ES else en
+
 
 MOVES = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
 
@@ -127,11 +136,11 @@ def draw_field(ax, free, base, goal=None):
               vmin=-1, vmax=0, extent=ext)
     ax.plot(*base, "s", color="#0d1b2a", ms=11)
     box = dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.85)
-    ax.annotate("base", base, xytext=(8, 8), textcoords="offset points", fontsize=11,
+    ax.annotate(tr("base", "base"), base, xytext=(8, 8), textcoords="offset points", fontsize=11,
                 bbox=box, zorder=6)
     if goal is not None:
         ax.plot(*goal, "*", color="#c0392b", ms=20, zorder=5)
-        ax.annotate("sick plant", goal, xytext=(-40, 16), textcoords="offset points",
+        ax.annotate(tr("sick plant", "planta enferma"), goal, xytext=(tr(-40, -70), 16), textcoords="offset points",
                     fontsize=11, color="#c0392b", bbox=box, zorder=6)
     ax.set_xticks([]); ax.set_yticks([]); ax.set_aspect("equal")
 
@@ -146,7 +155,8 @@ def explore(free, base, goal, gif=False):
         order = []
         path = astar(free, base, goal, guess=guess, explored=order)
         runs.append((name, order, np.array(path)))
-        print(f"{name:8s}: explored {len(order):4d} squares, path {length_m(path):.0f} m")
+        print(tr(f"{name:8s}: explored {len(order):4d} squares, path {length_m(path):.0f} m",
+                 f"{name:8s}: {len(order):4d} cuadrados explorados, camino {length_m(path):.0f} m"))
 
     dmax = max(d for _, order, _ in runs for _, d in order)
     fig, axs = plt.subplots(1, 2, figsize=(12, 4.6))
@@ -174,16 +184,16 @@ def explore(free, base, goal, gif=False):
                 line.set_data(path[:, 0], path[:, 1])
             else:
                 line.set_data([], [])
-            t.set_text(f"{name}: {m} squares explored")
+            t.set_text(tr(f"{name}: {m} squares explored", f"{name}: {m} cuadrados explorados"))
         return []
 
     anim = FuncAnimation(fig, update, frames=nframes, interval=ANIM_MS, repeat=False)
     fig.tight_layout()
     if gif:
-        anim.save("fig_explore.gif", writer="pillow", fps=25)
+        anim.save(f"fig_explore{SUFFIX}.gif", writer="pillow", fps=25)
     plt.show()                                     # the animation runs here
     update(nframes - 1)                            # final picture, saved as PNG
-    fig.savefig("fig_explore.png", dpi=160)
+    fig.savefig(f"fig_explore{SUFFIX}.png", dpi=160)
 
 
 def main():
@@ -205,26 +215,36 @@ def main():
     L1, L2 = length_m(short), length_m(cover)
     t2 = L2 / SPEED / 60
     area = free.sum() * CELL**2 / 1e4
-    print(f"Field: {nx*CELL:.0f} m x {ny*CELL:.0f} m, {area:.1f} ha to photograph")
-    print(f"1. Shortest flight base -> sick plant: {L1:.0f} m "
-          f"(straight line would be {CELL*np.hypot(*np.subtract(sick, base)):.0f} m)")
-    print(f"2. Lawn-mower over the whole field: {L2/1000:.2f} km, "
-          f"{t2:.0f} min at {SPEED:.0f} m/s")
-    print(f"   Battery: {BATTERY_MIN:.0f} min -> "
-          + ("enough." if t2 <= BATTERY_MIN else
-             f"NOT enough: {int(np.ceil(t2 / BATTERY_MIN))} batteries needed."))
+    straight = CELL * np.hypot(*np.subtract(sick, base))
+    nbat = int(np.ceil(t2 / BATTERY_MIN))
+    if not ES:
+        print(f"Field: {nx*CELL:.0f} m x {ny*CELL:.0f} m, {area:.1f} ha to photograph")
+        print(f"1. Shortest flight base -> sick plant: {L1:.0f} m "
+              f"(straight line would be {straight:.0f} m)")
+        print(f"2. Lawn-mower over the whole field: {L2/1000:.2f} km, "
+              f"{t2:.0f} min at {SPEED:.0f} m/s")
+        print(f"   Battery: {BATTERY_MIN:.0f} min -> "
+              + ("enough." if t2 <= BATTERY_MIN else f"NOT enough: {nbat} batteries needed."))
+    else:
+        print(f"Campo: {nx*CELL:.0f} m x {ny*CELL:.0f} m, {area:.1f} ha por fotografiar")
+        print(f"1. Vuelo más corto base -> planta enferma: {L1:.0f} m "
+              f"(en línea recta serían {straight:.0f} m)")
+        print(f"2. Cortacésped sobre todo el campo: {L2/1000:.2f} km, "
+              f"{t2:.0f} min a {SPEED:.0f} m/s")
+        print(f"   Batería: {BATTERY_MIN:.0f} min -> "
+              + ("suficiente." if t2 <= BATTERY_MIN else f"NO alcanza: se necesitan {nbat} baterías."))
 
     fig, axs = plt.subplots(1, 2, figsize=(12, 4.6))
-    titles = [f"Shortest flight: {L1:.0f} m",
-              f"Whole field: {L2/1000:.1f} km, {t2:.0f} min "
-              f"(battery {BATTERY_MIN:.0f} min)"]
+    titles = [tr(f"Shortest flight: {L1:.0f} m", f"Vuelo más corto: {L1:.0f} m"),
+              tr(f"Whole field: {L2/1000:.1f} km, {t2:.0f} min (battery {BATTERY_MIN:.0f} min)",
+                 f"Todo el campo: {L2/1000:.1f} km, {t2:.0f} min (batería {BATTERY_MIN:.0f} min)")]
     for ax, path, title, col in zip(axs, [short, cover], titles, ["#b45a0a", "#1a7a8a"]):
         draw_field(ax, free, base, sick if path is short else None)
         p = np.array(path)
         ax.plot(p[:, 0], p[:, 1], color=col, lw=2.2 if path is short else 1.4)
         ax.set_title(title, fontsize=13)
     fig.tight_layout()
-    fig.savefig("fig_field_path.png", dpi=160)
+    fig.savefig(f"fig_field_path{SUFFIX}.png", dpi=160)
     plt.show()
 
 

@@ -72,6 +72,8 @@ To *watch* how the shortest path is found, run `python 4_field_path.py --explore
 Dijkstra (left) spreads from the base like a ripple; A* (right) adds to each
 square the straight-line distance still to go, and leans towards the target.
 Same path length, far fewer squares explored.
+Add `--es` for Spanish titles, labels and messages (`python 4_field_path.py --es`,
+`python 4_field_path.py --explore --es`); figures are then saved as `*_es.png`.
 
 **5. `5_cart_pid_vs_mpc.py` — PID or MPC?** (seminar *From PID to Model
 Predictive Control*). The cart of demo 3, now with a PD controller whose push the
