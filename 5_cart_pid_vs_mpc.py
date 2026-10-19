@@ -15,6 +15,7 @@ Three runs, each a question for the room:
                                           which is the fastest PD that does not crash?
     python 5_cart_pid_vs_mpc.py moving    the same controllers, but the cart starts
                                           already moving towards the wall at 2 m/s
+    add --es for Spanish titles, labels and messages (figures saved as *_es.png)
 
 The MPC is the one of demo 3 (same model, same cost, same soft wall).
 """
@@ -24,6 +25,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 cart_plan = importlib.import_module("3_cart_mpc").cart_plan
+
+ES = "--es" in sys.argv[1:]
+SUFFIX = "_es" if ES else ""
+
+
+def tr(en, es):
+    return es if ES else en
 
 DT, UMAX, WALL = 0.1, 1.0, 10.0
 Q_POS, R_U = 1.0, 0.1
@@ -67,32 +75,34 @@ def simulate(control, p0=0.0, v0=0.0, t_end=15.0):
 def describe(name, result):
     what, t, x = result
     if what == "crash":
-        return f"{name:28s}: CRASH at t = {t:4.1f} s, speed {x:.1f} m/s"
+        return f"{name:28s}: " + tr(f"CRASH at t = {t:4.1f} s, speed {x:.1f} m/s",
+                                     f"CHOQUE en t = {t:4.1f} s, a {x:.1f} m/s")
     if what == "arrived":
-        return f"{name:28s}: stopped at the wall at t = {t:4.1f} s"
-    return f"{name:28s}: safe, but only at {x:.1f} m"
+        return f"{name:28s}: " + tr(f"stopped at the wall at t = {t:4.1f} s",
+                                     f"detenido en la pared en t = {t:4.1f} s")
+    return f"{name:28s}: " + tr(f"safe, but only at {x:.1f} m", f"seguro, pero solo a {x:.1f} m")
 
 
 def plot(cases, p0, v0, title, fname):
     fig, ax = plt.subplots(3, 1, figsize=(9, 7.5), sharex=True)
     for name, control, col in cases:
-        tr, res = simulate(control, p0, v0)
+        traj, res = simulate(control, p0, v0)
         print(describe(name, res))
-        t, p, v, u = tr.T
+        t, p, v, u = traj.T
         ax[0].plot(t, p, color=col, lw=2.5, label=name)
         ax[1].plot(t, v, color=col, lw=2.5)
         ax[2].step(t[1:], u[1:], where="pre", color=col, lw=2)
         if res[0] == "crash":
             ax[0].plot(res[1], WALL, "X", color=col, ms=16)
     ax[0].axhline(WALL, color="k", lw=4)
-    ax[0].set_ylabel("position [m]"); ax[0].set_ylim(0, 11.5)
+    ax[0].set_ylabel(tr("position [m]", "posición [m]")); ax[0].set_ylim(0, 11.5)
     ax[0].legend(loc="lower right", fontsize=9); ax[0].set_title(title)
-    ax[1].set_ylabel("speed [m/s]")
-    ax[2].set_ylabel("push [m/s²]"); ax[2].set_xlabel("time [s]")
+    ax[1].set_ylabel(tr("speed [m/s]", "velocidad [m/s]"))
+    ax[2].set_ylabel(tr("push [m/s²]", "empuje [m/s²]")); ax[2].set_xlabel(tr("time [s]", "tiempo [s]"))
     for s in (1, -1):
         ax[2].axhline(s * UMAX, color="grey", ls=":")
     fig.tight_layout()
-    fig.savefig(fname, dpi=160)
+    fig.savefig(fname.replace(".png", SUFFIX + ".png"), dpi=160)
     plt.show()
 
 
@@ -114,36 +124,43 @@ def tune():
             elif what == "short":
                 slow[i, j] = 1
     t, kp, kd = best
-    print(f"10 000 simulations. Fastest PD that does not crash: "
-          f"Kp = {kp:.1f}, Kd = {kd:.1f}, stopped at the wall in {t:.1f} s")
+    print(tr(f"10 000 simulations. Fastest PD that does not crash: "
+             f"Kp = {kp:.1f}, Kd = {kd:.1f}, stopped at the wall in {t:.1f} s",
+             f"10 000 simulaciones. El PD más rápido que no choca: "
+             f"Kp = {kp:.1f}, Kd = {kd:.1f}, detenido en la pared en {t:.1f} s"))
     fig, ax = plt.subplots(figsize=(7, 5.5))
     ax.set_facecolor("#C0392B")                         # red background = crash
     ax.pcolormesh(kps, kds, np.where(slow == 1, 1.0, np.nan), cmap="Greys",
                   vmin=0, vmax=2, shading="auto")       # grey = too slow
     im = ax.pcolormesh(kps, kds, T, cmap="viridis_r", shading="auto")
     ax.plot(kp, kd, "*", color="w", ms=18, mec="k")
-    fig.colorbar(im, label="time to stop at the wall [s]")
+    fig.colorbar(im, label=tr("time to stop at the wall [s]", "tiempo hasta detenerse en la pared [s]"))
     ax.set_xlabel("Kp"); ax.set_ylabel("Kd")
-    ax.set_title("red: crash into the wall    grey: not there after 20 s")
+    ax.set_title(tr("red: crash into the wall    grey: not there after 20 s",
+                    "rojo: choca con la pared    gris: no llega en 20 s"))
     fig.tight_layout()
-    fig.savefig("fig_pd_tuning.png", dpi=160)
+    fig.savefig(f"fig_pd_tuning{SUFFIX}.png", dpi=160)
     plt.show()
 
 
 def main():
-    arg = sys.argv[1] if len(sys.argv) > 1 else ""
+    args = [a for a in sys.argv[1:] if a != "--es"]
+    arg = args[0] if args else ""
+    gentle = tr("gentle PD", "PD suave")
+    mpc_name = tr("MPC, 4 s ahead", "MPC, 4 s adelante")
     if arg == "tune":
         tune()
     elif arg == "moving":
-        plot([("gentle PD", pd(*GENTLE), "#E8A33D"),
-              ("tuned PD (from 'tune')", pd(*TUNED), "#C0392B"),
-              ("MPC, 4 s ahead", mpc(40), "#2E8B57")],
-             0.0, 2.0, "The cart starts at 2 m/s towards the wall", "fig_pd_moving.png")
+        plot([(gentle, pd(*GENTLE), "#E8A33D"),
+              (tr("tuned PD (from 'tune')", "PD sintonizado (de 'tune')"), pd(*TUNED), "#C0392B"),
+              (mpc_name, mpc(40), "#2E8B57")],
+             0.0, 2.0, tr("The cart starts at 2 m/s towards the wall",
+                          "El carrito parte a 2 m/s hacia la pared"), "fig_pd_moving.png")
     else:
-        plot([("gentle PD", pd(*GENTLE), "#E8A33D"),
-              ("snappy PD", pd(*SNAPPY), "#C0392B"),
-              ("MPC, 4 s ahead", mpc(40), "#2E8B57")],
-             0.0, 0.0, "From rest", "fig_pd_vs_mpc.png")
+        plot([(gentle, pd(*GENTLE), "#E8A33D"),
+              (tr("snappy PD", "PD agresivo"), pd(*SNAPPY), "#C0392B"),
+              (mpc_name, mpc(40), "#2E8B57")],
+             0.0, 0.0, tr("From rest", "Desde el reposo"), "fig_pd_vs_mpc.png")
 
 
 if __name__ == "__main__":

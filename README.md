@@ -85,7 +85,8 @@ motor clips to ±1 m/s². A gentle tuning is safe but slow; a snappy one crashes
 `python 5_cart_pid_vs_mpc.py tune` tries 10 000 pairs of gains and finds a PD as
 fast as MPC; `python 5_cart_pid_vs_mpc.py moving` starts the cart at 2 m/s
 towards the wall: the tuned PD crashes, the MPC (unchanged) does not.
-Needs `3_cart_mpc.py` in the same folder.
+Needs `3_cart_mpc.py` in the same folder. Add `--es` for Spanish titles, labels
+and messages (`python 5_cart_pid_vs_mpc.py tune --es`); figures are then saved as `*_es.png`.
 
 ## Things to try
 
